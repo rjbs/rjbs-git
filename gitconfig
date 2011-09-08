@@ -1,0 +1,17 @@
+[user]
+  name = Ricardo Signes
+  email = rjbs@cpan.org
+[color]
+  diff = auto
+  status = auto
+  branch = auto
+[alias]
+  ci = commit -a
+  cl = clean -dfx
+  cc = cherry-pick
+  ff = merge --ff-only
+  fx = commit -a --amend -C HEAD
+  ix = diff --cached
+  st = status -sb
+  fap  = fetch --all --prune
+  hist = log --all --graph --color=always --pretty='[%C(cyan)%h%Creset]%C(bold cyan)%d%Creset %s'
