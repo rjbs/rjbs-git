@@ -175,30 +175,69 @@ sub read_extension {
 
   read $fh, my $payload, $len;
 
-  if ($sig eq 'REUC') {
-    my @files;
-
-    while (length $payload) {
-      my @data = unpack 'Z* Z* Z* Z*', $payload;
-      substr $payload, 0, 4 + length join(q{}, @data), '';
-
-      my $expect  = grep { $_ != 0 } @data[1 .. 3];
-
-      my @objects = unpack('H40' x $expect, $payload);
-      substr $payload, 0, 20 * $expect, '';
-
-      push @files, {
-        name   => $data[0],
-        stages => [
-          map {; $data[$_] ? { mode => $data[$_], sha1 => shift @objects } : undef } (1..3)
-        ],
-      };
-    }
-
-    return { REUC => \@files };
-  } else {
-    return;
-    die "unknown mandatory extension" unless $sig =~ /\A[A-Z]/;
-    return { $sig => { length => $len } };
+  if (my $code = __PACKAGE__->can("parse_$sig")) {
+    return $code->($sig, $len, \$payload);
   }
+
+  warn "unknown mandatory extension" unless $sig =~ /\A[A-Z]/;
+  return { $sig => { length => $len } };
+}
+
+sub parse_TREE {
+  my ($sig, $len, $payload_ref) = @_;
+  my $payload = $$payload_ref;
+
+  my @entries;
+
+  while (length $payload) {
+    tie my %entry, 'Tie::IxHash';
+
+    # nul-terminated path component
+    $entry{name} = unpack 'Z', $payload;
+    substr $payload, 0, 1 + length $entry{name}, '';
+
+    # ascii number followed by SP
+    my $sp_pos = index $payload, q{ };
+    my $entry_count  = substr $payload, 0, 1+$sp_pos, '';
+    substr $payload, 0, 1, ''; # remove the whitespace
+    $entry{entry_count} = $entry_count;
+
+    # ascii number followed by NL
+    my $sp_pos = index $payload, qq{\x0A};
+    my $subtree_count = substr $payload, 0, 1+$sp_pos, '';
+    substr $payload, 0, 1, ''; # remove the whitespace
+    $entry{subtree_count} = $subtree_count;
+
+    $entry{sha1} = unpack 'H40', (substr $payload, 0, 20, '');
+
+    push @entries, \%entry;
+  }
+
+  return { TREE => \@entries };
+}
+
+sub parse_REUC {
+  my ($sig, $len, $payload_ref) = @_;
+  my $payload = $$payload_ref;
+
+  my @files;
+
+  while (length $payload) {
+    my @data = unpack 'Z* Z* Z* Z*', $payload;
+    substr $payload, 0, 4 + length join(q{}, @data), '';
+
+    my $expect  = grep { $_ != 0 } @data[1 .. 3];
+
+    my @objects = unpack('H40' x $expect, $payload);
+    substr $payload, 0, 20 * $expect, '';
+
+    push @files, {
+      name   => $data[0],
+      stages => [
+        map {; $data[$_] ? { mode => $data[$_], sha1 => shift @objects } : undef } (1..3)
+      ],
+    };
+  }
+
+  return { REUC => \@files };
 }
