@@ -98,6 +98,14 @@ for (1 .. $idx_count) {
   push @entries, \%entry;
 }
 
+sub fmt_t {
+  my ($t, $t_ns) = @_;
+  my $t = localtime $t;
+  $t .= sprintf ' + %d ns', $t_ns / 1e9 if $t_ns;
+
+  return $t;
+}
+
 {
   my @entry_dump;
   $index{entries} = \@entry_dump;
@@ -113,8 +121,8 @@ for (1 .. $idx_count) {
     %entry = (
       name  => $e->{name},
       stage => $e->{stage},
-      ctime => join(q{.}, scalar(localtime $e->{ctime}), $e->{ctime_ns} / 1e9),
-      mtime => join(q{.}, scalar(localtime $e->{mtime}), $e->{mtime_ns} / 1e9),
+      ctime => fmt_t($e->{ctime}, $e->{ctime_ns}),
+      mtime => fmt_t($e->{mtime}, $e->{mtime_ns}),
       dev   => $e->{dev},
       inode => $e->{inode},
       type  => $type{ $e->{type} } // "$e->{type} (unknown!)",
