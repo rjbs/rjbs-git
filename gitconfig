@@ -5,6 +5,8 @@
   diff = auto
   status = auto
   branch = auto
+[push]
+  default = simple
 [alias]
   ci = commit -a
   cl = clean -dfx
@@ -14,4 +16,7 @@
   ix = diff --cached
   st = status -sb
   fap  = fetch --all --prune
+  wip  = commit -a -m WIP
+  fist = !git fap && git hist
   hist = log --all --graph --color=always --pretty='[%C(cyan)%h%Creset]%C(bold cyan)%d%Creset %s'
+  shist = log --graph --color=always --pretty='[%C(cyan)%h%Creset]%C(bold cyan)%d%Creset %s'
